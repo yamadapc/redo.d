@@ -1,4 +1,5 @@
-import std.file : rename, remove;
+import std.file : rename, remove, isFile;
+import std.path : extension;
 import std.process : wait, spawnProcess;
 import std.stdio : File, writeln, stdin, stdout;
 
@@ -31,4 +32,26 @@ void redo(const string target)
     writeln("Redo script exit with non-zero exit code: ", exit);
     remove(tmpPath);
   }
+}
+
+string redoPath(const string path)
+{
+  if(isFile(path ~ ".do"))
+  {
+    return path;
+  }
+  else
+  {
+    auto ext = extension(path);
+    if(ext != null)
+    {
+      auto dft =  "default" ~ ext ~ ".do";
+      if(isFile(dft))
+      {
+        return dft;
+      }
+    }
+  }
+
+  return null;
 }
