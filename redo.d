@@ -1,4 +1,4 @@
-import std.file : rename;
+import std.file : rename, remove;
 import std.process : wait, spawnProcess;
 import std.stdio : File, writeln, stdin, stdout;
 
@@ -29,5 +29,6 @@ void redo(const string target)
   else
   {
     writeln("Redo script exit with non-zero exit code: ", exit);
+    remove(tmpPath);
   }
 }
