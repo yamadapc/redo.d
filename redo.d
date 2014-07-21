@@ -7,10 +7,17 @@ void main(string[] args)
 {
   version(unittest) return;
 
-  foreach(const ref arg; args[0..$])
+  if(args.length == 1) return printUsage();
+
+  foreach(const ref arg; args[1..$])
   {
     redo(arg);
   }
+}
+
+void printUsage()
+{
+  writeln("Usage: redo files...");
 }
 
 void redo(const string target)
