@@ -1,7 +1,7 @@
 import std.file : rename, remove, isFile, exists;
 import std.path : extension;
-import std.process : wait, spawnProcess;
-import std.stdio : File, writeln, stdin, stdout;
+import std.process : wait, spawnProcess, environment;
+import std.stdio : File, writeln, stdin, stdout, stderr;
 
 void main(string[] args)
 {
@@ -29,7 +29,13 @@ void redo(const string target)
 
   auto pid = spawnProcess(
     ["sh", target ~ ".do", "-", "-", tmpPath, ">", tmpPath],
-    stdin
+    stdin,
+    stdout,
+    stderr,
+    [
+      "REDO_TARGET": target,
+      "PATH": environment.get("PATH", "/bin") ~ ":."
+    ]
   );
   auto exit = wait(pid);
 

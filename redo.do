@@ -1,2 +1,2 @@
-echo $3
+redo-ifchange redo.d
 dmd redo.d -of$3
