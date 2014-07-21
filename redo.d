@@ -5,6 +5,8 @@ import std.stdio : File, writeln, stdin, stdout;
 
 void main(string[] args)
 {
+  version(unittest) return;
+
   foreach(const ref arg; args[0..$])
   {
     redo(arg);
@@ -45,4 +47,12 @@ string redoPath(const string path)
     return ret;
 
   return null;
+}
+
+unittest
+{
+  writeln("Running tests for `redoPath`");
+  assert(redoPath("redo") == "redo.do");
+  assert(redoPath("something") == null);
+  assert(redoPath("something.d") == "default.d.do");
 }
