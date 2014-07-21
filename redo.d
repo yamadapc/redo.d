@@ -15,43 +15,30 @@ void redo(const string target)
 {
   immutable string tmpPath = target ~ "---redoing";
   auto tmp = File(tmpPath, "w");
+  scope(exit) tmp.close();
 
   auto pid = spawnProcess(
     ["sh", target ~ ".do", "-", "-", tmpPath, ">", tmpPath],
     stdin
   );
   auto exit = wait(pid);
-  tmp.close();
 
-  if(exit == 0)
-  {
-    rename(tmpPath, target);
-  }
-  else
+  if(exit != 0)
   {
     writeln("Redo script exit with non-zero exit code: ", exit);
     remove(tmpPath);
   }
+  else rename(tmpPath, target);
 }
 
 string redoPath(const string path)
 {
-  if(isFile(path ~ ".do"))
-  {
-    return path;
-  }
-  else
-  {
-    auto ext = extension(path);
-    if(ext != null)
-    {
-      auto dft =  "default" ~ ext ~ ".do";
-      if(isFile(dft))
-      {
-        return dft;
-      }
-    }
-  }
+  if(isFile(path ~ ".do")) return path;
+
+  auto ext = extension(path);
+  string dft;
+
+  if(ext != null && isFile(dft = "default" ~ ext ~ ".do")) return dft;
 
   return null;
 }
