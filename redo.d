@@ -1,4 +1,4 @@
-import std.file : rename, remove, isFile;
+import std.file : rename, remove, isFile, exists;
 import std.path : extension;
 import std.process : wait, spawnProcess;
 import std.stdio : File, writeln, stdin, stdout;
@@ -15,6 +15,7 @@ void redo(const string target)
 {
   immutable string tmpPath = target ~ "---redoing";
   auto tmp = File(tmpPath, "w");
+  scope(failure) remove(tmpPath);
   scope(exit) tmp.close();
 
   auto pid = spawnProcess(
@@ -33,12 +34,15 @@ void redo(const string target)
 
 string redoPath(const string path)
 {
-  if(isFile(path ~ ".do")) return path;
+  string ret;
+  string ext;
 
-  auto ext = extension(path);
-  string dft;
+  if(exists(ret = path ~ ".do") && isFile(ret))
+    return ret;
 
-  if(ext != null && isFile(dft = "default" ~ ext ~ ".do")) return dft;
+  ext = extension(path);
+  if(ext != null && exists(ret = "default" ~ ext ~ ".do") && isFile(ret))
+    return ret;
 
   return null;
 }
