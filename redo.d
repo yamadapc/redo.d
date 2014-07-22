@@ -30,13 +30,23 @@ void printUsage()
 
 void redo(const string target)
 {
+  immutable string redoPath = target.redoPath;
+
+  if(redoPath == null) {
+    writeln("No .do file found for target '" ~ target ~ "'");
+    return;
+  }
+
   immutable string tmpPath = target ~ "---redoing";
   auto tmp = File(tmpPath, "w");
   scope(failure) remove(tmpPath);
-  scope(exit) tmp.close();
+  scope(exit) tmp.close;
 
   auto pid = spawnProcess(
-    ["sh", target ~ ".do", "-", "-", tmpPath, ">", tmpPath],
+    [
+      "sh", redoPath, "-", target.extension.baseName, tmpPath,
+      ">", tmpPath
+    ],
     stdin,
     stdout,
     stderr,
@@ -64,11 +74,11 @@ string redoPath(const string path)
   string ret;
   string ext;
 
-  if(exists(ret = path ~ ".do") && isFile(ret))
+  if(exists(ret = path ~ ".do") && ret.isFile)
     return ret;
 
-  ext = extension(path);
-  if(ext != null && exists(ret = "default" ~ ext ~ ".do") && isFile(ret))
+  ext = path.extension;
+  if(ext != null && exists(ret = "default" ~ ext ~ ".do") && ret.isFile)
     return ret;
 
   return null;
