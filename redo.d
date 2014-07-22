@@ -1,5 +1,5 @@
-import std.file : rename, remove, isFile, exists;
-import std.path : extension;
+import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode;
+import std.path : extension, baseName, buildPath;
 import std.process : wait, spawnProcess, environment;
 import std.stdio : File, writeln, stdin, stdout, stderr;
 
@@ -90,4 +90,42 @@ unittest
   assert(redoPath("redo") == "redo.do");
   assert(redoPath("something") == null);
   assert(redoPath("something.d") == "default.d.do");
+}
+
+/**
+ * Returns whether a target is up-to-date according to its entry in the redo DB.
+ */
+
+bool upToDate(const string target)
+{
+  // If a target doesn't exist it's out-of-date by definition
+  if(!exists(target)) return false;
+
+  // For a directory, scan its contents and return false if any of its entries
+  // isn't up-to-date.
+  if(target.isDir)
+  {
+    auto entries = dirEntries(target, SpanMode.breadth);
+    foreach(entry; dirEntries(target, SpanMode.breadth))
+      if(!upToDate(buildPath(target, entry))) return false;
+    return true;
+  }
+
+  // this isn't right; we look in the .redo dir
+  // from this point out implementation will start to differ from the haskell
+  // implementation, as we'll maybe use a small database engine, instead of
+  // plain files (LevelDb, anyone?)
+  auto f = File(target, "r");
+  scope(exit) f.close;
+  auto oldHash = f.readln;
+  //auto newHash = ...
+
+  return true;
+}
+
+unittest
+{
+  writeln("Running tests for `upToDate`");
+  assert(upToDate("non-existent-target") == false);
+  assert(upToDate("research") == false);
 }
