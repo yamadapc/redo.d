@@ -15,10 +15,18 @@ void main(string[] args)
   }
 }
 
+/**
+ * Print `redo` usage.
+ */
+
 void printUsage()
 {
   writeln("Usage: redo files...");
 }
+
+/**
+ * Redoes a target
+ */
 
 void redo(const string target)
 {
@@ -46,6 +54,10 @@ void redo(const string target)
   }
   else rename(tmpPath, target);
 }
+
+/**
+ * Fetches the redo path for a given file.
+ */
 
 string redoPath(const string path)
 {
