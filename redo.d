@@ -1,6 +1,7 @@
 import std.ascii : LetterCase;
 import std.digest.md : toHexString, MD5;
-import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode;
+import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode,
+                  mkdirRecurse;
 import std.path : extension, baseName, buildPath, dirName;
 import std.process : wait, spawnProcess, environment;
 import std.stdio : File, writeln, stdin, stdout, stderr;
@@ -11,10 +12,10 @@ void main(string[] args)
 
   if(args.length == 1) return printUsage();
 
-  foreach(const ref arg; args[1..$])
-  {
-    redo(arg);
-  }
+  if(args[0] == "redo-ifchange")
+    foreach(const ref arg; args[1..$]) redoIfChange(arg);
+  else
+    foreach(const ref arg; args[1..$]) redo(arg);
 }
 
 /**
@@ -65,6 +66,34 @@ void redo(const string target)
     remove(tmpPath);
   }
   else rename(tmpPath, target);
+}
+
+/**
+ * Hashes a dependency for the REDO_TARGET env. variable.
+ */
+
+void redoIfChange(const string dep)
+{
+  auto target = environment.get("REDO_TARGET");
+
+  if(target == null)
+  {
+    writeln("Missing REDO_TARGET environment variable.");
+    return;
+  }
+  else if(!dep.exists)
+  {
+    return;
+  }
+
+  auto depsDir = buildPath(".redo", target);
+  mkdirRecurse(depsDir);
+
+  string hash = dep.genHash;
+  auto f = File(buildPath(depsDir, dep), "w");
+  scope(exit) f.close;
+
+  f.write(hash);
 }
 
 /**
@@ -135,8 +164,8 @@ unittest
 string getHash(const string entry)
 {
   auto file = new File(entry, "r");
-  scope(exit) file.close();
-  return file.readln[0..$-1];
+  scope(exit) file.close;
+  return file.readln[0..$];
 }
 
 /**
