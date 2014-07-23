@@ -1,0 +1,13 @@
+language: d
+script: rdmd -unittest redo.d
+
+install:
+  # dmd
+  # dub
+  - DMD_VER=2.065.0
+  - DMD=dmd_${DMD_VER}-0_amd64.deb
+  - wget http://downloads.dlang.org/releases/2014/${DMD}
+  - sudo dpkg -i ${DMD} || true
+  - sudo apt-get -y update
+  - sudo apt-get -fy install
+  - sudo dpkg -i ${DMD}

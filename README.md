@@ -1,5 +1,7 @@
 redo.d
 ======
+[![Build Status](https://travis-ci.org/yamadapc/redo.d.svg?branch=master)](https://travis-ci.org/yamadapc/redo.d)
+- - -
 An implementation of [djb's redo](http://cr.yp.to/redo.html) in the D
 programming language.
 
