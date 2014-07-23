@@ -10,7 +10,7 @@ void main(string[] args)
 {
   version(unittest) return;
 
-  if(args.length == 1) return printUsage();
+  if(args.length == 1) return printUsage;
 
   if(args[0] == "redo-ifchange")
     foreach(const ref arg; args[1..$]) redoIfChange(arg);
@@ -33,7 +33,7 @@ void printUsage()
 
 void redo(const string target)
 {
-  if(upToDate(target)) return;
+  if(target.upToDate) return;
 
   immutable string redoPath = target.redoPath;
 
@@ -45,7 +45,7 @@ void redo(const string target)
 
   immutable string tmpPath = target ~ "---redoing";
   auto tmp = File(tmpPath, "w");
-  scope(failure) remove(tmpPath);
+  scope(failure) tmpPath.remove;
   scope(exit) tmp.close;
 
   auto pid = spawnProcess(
@@ -58,12 +58,12 @@ void redo(const string target)
       "PATH": environment.get("PATH", "/bin") ~ ":."
     ]
   );
-  auto exit = wait(pid);
+  auto exit = pid.wait;
 
   if(exit != 0)
   {
     writeln("Redo script exit with non-zero exit code: ", exit);
-    remove(tmpPath);
+    tmpPath.remove;
   }
   else rename(tmpPath, target);
 }
@@ -139,11 +139,11 @@ bool upToDate(const string target)
 
   foreach(entry; dirEntries(depsDir, SpanMode.breadth))
   {
-    auto dependency = entry.baseName;
-    if(!exists(dependency)) return false;
+    auto dep = entry.baseName;
+    if(!dep.exists) return false;
 
-    auto oldhash = getHash(entry);
-    auto newhash = genHash(dependency);
+    auto oldhash = entry.getHash;
+    auto newhash = dep.genHash;
     if(oldhash != newhash) return false;
   }
 
@@ -175,12 +175,12 @@ string getHash(const string entry)
 string genHash(const string filePath)
 {
   auto file = new File(filePath, "r");
-  scope(exit) file.close();
+  scope(exit) file.close;
 
   MD5 hash;
   foreach(ubyte[] buffer; file.byChunk(4096))
     hash.put(buffer);
-  ubyte[] result = hash.finish();
+  ubyte[] result = hash.finish;
 
   return result.toHexString!(LetterCase.lower);
 }
