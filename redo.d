@@ -1,7 +1,7 @@
 import std.ascii : LetterCase;
 import std.digest.md : toHexString, MD5;
 import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode;
-import std.path : extension, baseName, buildPath;
+import std.path : extension, baseName, buildPath, dirName;
 import std.process : wait, spawnProcess, environment;
 import std.stdio : File, writeln, stdin, stdout, stderr;
 
@@ -80,8 +80,12 @@ string redoPath(const string path)
     return ret;
 
   ext = path.extension;
-  if(ext != null && exists(ret = "default" ~ ext ~ ".do") && ret.isFile)
-    return ret;
+  if(ext != null)
+  {
+    auto dir = path.dirName;
+    ret = buildPath(dir, "default" ~ ext ~ ".do");
+    if(ret.exists && ret.isFile) return ret;
+  }
 
   return null;
 }
