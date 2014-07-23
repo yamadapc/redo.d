@@ -83,7 +83,8 @@ string redoPath(const string path)
   if(ext != null)
   {
     auto dir = path.dirName;
-    ret = buildPath(dir, "default" ~ ext ~ ".do");
+    ret = dir != "." ? buildPath(dir, "default" ~ ext ~ ".do") :
+                       "default" ~ ext ~ ".do";
     if(ret.exists && ret.isFile) return ret;
   }
 
