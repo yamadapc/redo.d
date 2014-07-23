@@ -1,3 +1,5 @@
+import std.ascii : LetterCase;
+import std.digest.md : toHexString, MD5;
 import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode;
 import std.path : extension, baseName, buildPath;
 import std.process : wait, spawnProcess, environment;
@@ -30,9 +32,12 @@ void printUsage()
 
 void redo(const string target)
 {
+  if(upToDate(target)) return;
+
   immutable string redoPath = target.redoPath;
 
-  if(redoPath == null) {
+  if(redoPath == null)
+  {
     writeln("No .do file found for target '" ~ target ~ "'");
     return;
   }
@@ -43,13 +48,10 @@ void redo(const string target)
   scope(exit) tmp.close;
 
   auto pid = spawnProcess(
-    [
-      "sh", redoPath, "-", target.extension.baseName, tmpPath,
-      ">", tmpPath
-    ],
+    [ "sh", redoPath, "-", target.baseName, tmpPath ],
     stdin,
-    stdout,
-    stderr,
+    tmp,
+    tmp,
     [
       "REDO_TARGET": target,
       "PATH": environment.get("PATH", "/bin") ~ ":."
@@ -98,27 +100,18 @@ unittest
 
 bool upToDate(const string target)
 {
-  // If a target doesn't exist it's out-of-date by definition
-  if(!exists(target)) return false;
+  auto depsDir = buildPath(".redo", target);
+  if(!exists(depsDir)) return false;
 
-  // For a directory, scan its contents and return false if any of its entries
-  // isn't up-to-date.
-  if(target.isDir)
+  foreach(entry; dirEntries(depsDir, SpanMode.breadth))
   {
-    auto entries = dirEntries(target, SpanMode.breadth);
-    foreach(entry; dirEntries(target, SpanMode.breadth))
-      if(!upToDate(buildPath(target, entry))) return false;
-    return true;
-  }
+    auto dependency = entry.baseName;
+    if(!exists(dependency)) return false;
 
-  // this isn't right; we look in the .redo dir
-  // from this point out implementation will start to differ from the haskell
-  // implementation, as we'll maybe use a small database engine, instead of
-  // plain files (LevelDb, anyone?)
-  auto f = File(target, "r");
-  scope(exit) f.close;
-  auto oldHash = f.readln;
-  //auto newHash = ...
+    auto oldhash = getHash(entry);
+    auto newhash = genHash(dependency);
+    if(oldhash != newhash) return false;
+  }
 
   return true;
 }
@@ -128,4 +121,32 @@ unittest
   writeln("Running tests for `upToDate`");
   assert(upToDate("non-existent-target") == false);
   assert(upToDate("research") == false);
+}
+
+/**
+ * Gets the hash for an entry in the `.redo` directory.
+ */
+
+string getHash(const string entry)
+{
+  auto file = new File(entry, "r");
+  scope(exit) file.close();
+  return file.readln[0..$-1];
+}
+
+/**
+ * Generates an md5 hash for given file
+ */
+
+string genHash(const string filePath)
+{
+  auto file = new File(filePath, "r");
+  scope(exit) file.close();
+
+  MD5 hash;
+  foreach(ubyte[] buffer; file.byChunk(4096))
+    hash.put(buffer);
+  ubyte[] result = hash.finish();
+
+  return result.toHexString!(LetterCase.lower);
 }
