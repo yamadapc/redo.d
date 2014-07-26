@@ -1,9 +1,9 @@
 import std.ascii : LetterCase;
 import std.digest.md : toHexString, MD5;
 import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode,
-                  mkdirRecurse;
+                  mkdirRecurse, chdir, getSize;
 import std.path : extension, baseName, buildPath, dirName;
-import std.process : wait, spawnProcess, environment;
+import std.process : wait, spawnProcess, environment, getcwd;
 import std.regex : replaceFirst, regex;
 import std.stdio : File, writeln, stdin, stdout, stderr;
 
@@ -13,10 +13,28 @@ void main(string[] args)
 
   if(args.length == 1) return printUsage;
 
+  auto topDir = getcwd();
+
   if(args[0] == "redo-ifchange")
-    foreach(const ref arg; args[1..$]) redoIfChange(arg);
+  {
+    foreach(const ref arg; args[1..$])
+    {
+      auto dir = arg.dirName;
+      chdir(dir);
+      redoIfChange(arg.baseName);
+      chdir(topDir);
+    }
+  }
   else
-    foreach(const ref arg; args[1..$]) redo(arg);
+  {
+    foreach(const ref arg; args[1..$])
+    {
+      auto dir = arg.dirName;
+      chdir(dir);
+      redo(arg.baseName, topDir);
+      chdir(topDir);
+    }
+  }
 }
 
 /**
@@ -32,7 +50,7 @@ void printUsage()
  * Redoes a target
  */
 
-void redo(const string target)
+void redo(const string target, string topDir)
 {
   if(target.upToDate) return;
 
@@ -56,7 +74,7 @@ void redo(const string target)
     stderr,
     [
       "REDO_TARGET": target,
-      "PATH": environment.get("PATH", "/bin") ~ ":."
+      "PATH": environment.get("PATH", "/bin") ~ ":" ~ topDir
     ]
   );
   auto exit = pid.wait;
@@ -66,6 +84,7 @@ void redo(const string target)
     writeln("Redo script exit with non-zero exit code: ", exit);
     tmpPath.remove;
   }
+  else if(tmpPath.getSize == 0) tmpPath.remove;
   else rename(tmpPath, target);
 }
 
