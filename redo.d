@@ -4,6 +4,7 @@ import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode,
                   mkdirRecurse;
 import std.path : extension, baseName, buildPath, dirName;
 import std.process : wait, spawnProcess, environment;
+import std.regex : replaceFirst, regex;
 import std.stdio : File, writeln, stdin, stdout, stderr;
 
 void main(string[] args)
@@ -51,8 +52,8 @@ void redo(const string target)
   auto pid = spawnProcess(
     [ "sh", "-x", redoPath, "-", target.baseName, tmpPath ],
     stdin,
-    tmp,
-    tmp,
+    stdout,
+    stderr,
     [
       "REDO_TARGET": target,
       "PATH": environment.get("PATH", "/bin") ~ ":."
@@ -125,7 +126,7 @@ unittest
   writeln("Running tests for `redoPath`");
   assert(redoPath("redo") == "redo.do");
   assert(redoPath("something") == null);
-  assert(redoPath("something.d") == "default.d.do");
+  assert(redoPath("something.c") == "default.c.do");
 }
 
 /**
@@ -134,17 +135,20 @@ unittest
 
 bool upToDate(const string target)
 {
+  if(!target.exists) return false;
+
   auto depsDir = buildPath(".redo", target);
-  if(!exists(depsDir)) return false;
+  if(!depsDir.exists) return false;
 
   foreach(entry; dirEntries(depsDir, SpanMode.breadth))
   {
-    auto dep = entry.baseName;
+    auto dep = replaceFirst(entry.name, regex(depsDir ~ `[/\\]`), "");
     if(!dep.exists) return false;
 
     auto oldhash = entry.getHash;
     auto newhash = dep.genHash;
-    if(oldhash != newhash) return false;
+
+    if(oldhash != newhash || (dep.redoPath && !dep.upToDate)) return false;
   }
 
   return true;
