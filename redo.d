@@ -49,7 +49,7 @@ void redo(const string target)
   scope(exit) tmp.close;
 
   auto pid = spawnProcess(
-    [ "sh", redoPath, "-", target.baseName, tmpPath ],
+    [ "sh -x", redoPath, "-", target.baseName, tmpPath ],
     stdin,
     tmp,
     tmp,
