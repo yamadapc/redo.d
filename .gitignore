@@ -3,3 +3,4 @@ redo
 *---redoing
 *.o
 .dub
+.redo

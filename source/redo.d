@@ -1,3 +1,4 @@
+import std.algorithm : startsWith;
 import std.ascii : LetterCase;
 import std.digest.md : toHexString, MD5;
 import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode,
@@ -6,6 +7,9 @@ import std.path : extension, baseName, buildPath, dirName, stripExtension;
 import std.process : wait, spawnProcess, environment, getcwd;
 import std.regex : replaceFirst, regex;
 import std.stdio : File, writeln, stdin, stdout, stderr;
+import std.string : chompPrefix;
+
+import leveldb : DB, Slice, Options;
 
 version(unittest) void main() {}
 else
@@ -18,12 +22,12 @@ void main(string[] args)
   if(args[0] == "redo-ifchange")
   {
     foreach(const ref arg; args[1..$])
-      redoIfChange(arg, topDir);
+      redoIfChange(topDir, arg);
   }
   else
   {
     foreach(const ref arg; args[1..$])
-      redo(arg, topDir);
+      redo(topDir, arg);
   }
 }
 
@@ -36,11 +40,20 @@ void printUsage()
   writeln("Usage: redo files...");
 }
 
+DB getDb(const string topDir)
+{
+  auto dbPath = buildPath(topDir, ".redo"); // TODO - resolve db path like git.
+
+  auto opts = new Options;
+  opts.create_if_missing = true;
+  return new DB(opts, dbPath);
+}
+
 /**
  * Redoes a target
  */
 
-void redo(const string target, string topDir)
+void redo(const string topDir, const string target)
 {
   if(upToDate(topDir, target)) return;
 
@@ -64,14 +77,14 @@ void redo(const string target, string topDir)
     stderr,
     [
       "REDO_TARGET": target,
-      "PATH": environment.get("PATH", "/bin") ~ ":" ~ topDir
+      "PATH": environment.get("PATH", "/bin") ~ ":" ~ "."
     ]
   );
   auto exit = pid.wait;
 
   if(exit != 0)
   {
-    writeln("Redo script exit with non-zero exit code: ", exit);
+    writeln("Redo script exit with non-zero exit code; ", exit);
     tmpPath.remove;
   }
   else if(tmpPath.getSize == 0) tmpPath.remove;
@@ -82,7 +95,7 @@ void redo(const string target, string topDir)
  * Hashes a dependency for the REDO_TARGET env. variable.
  */
 
-void redoIfChange(const string dep, const string topDir)
+void redoIfChange(const string topDir, const string dep)
 {
   auto target = environment.get("REDO_TARGET");
 
@@ -96,14 +109,13 @@ void redoIfChange(const string dep, const string topDir)
     return;
   }
 
-  auto depsDir = buildPath(topDir, ".redo", target, dep.dirName);
-  mkdirRecurse(depsDir);
+  string hash = dep.hash;
 
-  string hash = dep.genHash;
-  auto f = File(buildPath(depsDir, dep.baseName), "w");
-  scope(exit) f.close;
-
-  f.write(hash);
+  auto db = getDb(topDir);
+  scope(exit) delete db;
+  auto head = db.find(target, "");
+  if(head == "") db.put(target, true);
+  db.put(target ~ "_" ~ dep, hash);
 }
 
 /**
@@ -146,19 +158,29 @@ bool upToDate(const string topDir, const string target)
 {
   if(!target.exists) return false;
 
-  auto depsDir = buildPath(topDir, ".redo", target);
-  if(!depsDir.exists) return false;
+  auto db = getDb(topDir);
+  scope(exit) delete db;
+  auto it = db.iterator;
+  it.seek(target);
 
-  foreach(entry; dirEntries(depsDir, SpanMode.breadth))
+  if(it.valid && it.value.as!bool)
   {
-    if(entry.isDir) continue;
+    it.next;
+    if(!it.valid) return true; // this shouldn't ever execute.
+  }
+  else return false;
 
-    auto dep = replaceFirst(entry.name, regex(depsDir ~ `[/\\]`), "");
+  auto prefix = target ~ "_";
+  foreach(Slice key, Slice value; it)
+  {
+    auto skey = key.as!string;
+    if(0 == startsWith(skey, prefix)) continue;
+
+    auto dep = skey.chompPrefix(prefix);
     if(!dep.exists) return false;
 
-    auto oldhash = entry.getHash;
-    auto newhash = dep.genHash;
-
+    auto oldhash = value.as!string;
+    auto newhash = dep.hash;
     if(oldhash != newhash || (dep.redoPath && !upToDate(topDir, dep)))
       return false;
   }
@@ -168,27 +190,15 @@ bool upToDate(const string topDir, const string target)
 
 unittest
 {
-  writeln("Running tests for `upToDate`");
   assert(upToDate(".", "non-existent-target") == false);
   assert(upToDate(".", "research") == false);
-}
-
-/**
- * Gets the hash for an entry in the `.redo` directory.
- */
-
-string getHash(const string entry)
-{
-  auto file = new File(entry, "r");
-  scope(exit) file.close;
-  return file.readln[0..$];
 }
 
 /**
  * Generates an md5 hash for given file
  */
 
-string genHash(const string filePath)
+string hash(const string filePath)
 {
   auto file = new File(filePath, "r");
   scope(exit) file.close;
