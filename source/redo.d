@@ -7,10 +7,10 @@ import std.process : wait, spawnProcess, environment, getcwd;
 import std.regex : replaceFirst, regex;
 import std.stdio : File, writeln, stdin, stdout, stderr;
 
+version(unittest) void main() {}
+else
 void main(string[] args)
 {
-  version(unittest) return;
-
   if(args.length == 1) return printUsage;
 
   auto topDir = getcwd();
@@ -18,16 +18,12 @@ void main(string[] args)
   if(args[0] == "redo-ifchange")
   {
     foreach(const ref arg; args[1..$])
-    {
       redoIfChange(arg, topDir);
-    }
   }
   else
   {
     foreach(const ref arg; args[1..$])
-    {
       redo(arg, topDir);
-    }
   }
 }
 
@@ -173,8 +169,8 @@ bool upToDate(const string topDir, const string target)
 unittest
 {
   writeln("Running tests for `upToDate`");
-  assert(upToDate("non-existent-target") == false);
-  assert(upToDate("research") == false);
+  assert(upToDate(".", "non-existent-target") == false);
+  assert(upToDate(".", "research") == false);
 }
 
 /**
