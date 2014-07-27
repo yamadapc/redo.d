@@ -1,2 +1,2 @@
-redo-ifchange redo.d
-dmd redo.d -of$3
+redo-ifchange source/redo.d
+dub build --force

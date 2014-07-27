@@ -1,7 +1,7 @@
 import std.ascii : LetterCase;
 import std.digest.md : toHexString, MD5;
 import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode,
-                  mkdirRecurse, chdir, getSize;
+                  mkdirRecurse, getSize;
 import std.path : extension, baseName, buildPath, dirName;
 import std.process : wait, spawnProcess, environment, getcwd;
 import std.regex : replaceFirst, regex;
@@ -19,20 +19,14 @@ void main(string[] args)
   {
     foreach(const ref arg; args[1..$])
     {
-      auto dir = arg.dirName;
-      chdir(dir);
-      redoIfChange(arg.baseName);
-      chdir(topDir);
+      redoIfChange(arg, topDir);
     }
   }
   else
   {
     foreach(const ref arg; args[1..$])
     {
-      auto dir = arg.dirName;
-      chdir(dir);
-      redo(arg.baseName, topDir);
-      chdir(topDir);
+      redo(arg, topDir);
     }
   }
 }
@@ -52,7 +46,7 @@ void printUsage()
 
 void redo(const string target, string topDir)
 {
-  if(target.upToDate) return;
+  if(upToDate(topDir, target)) return;
 
   immutable string redoPath = target.redoPath;
 
@@ -92,7 +86,7 @@ void redo(const string target, string topDir)
  * Hashes a dependency for the REDO_TARGET env. variable.
  */
 
-void redoIfChange(const string dep)
+void redoIfChange(const string dep, const string topDir)
 {
   auto target = environment.get("REDO_TARGET");
 
@@ -106,11 +100,11 @@ void redoIfChange(const string dep)
     return;
   }
 
-  auto depsDir = buildPath(".redo", target);
+  auto depsDir = buildPath(topDir, ".redo", target, dep.dirName);
   mkdirRecurse(depsDir);
 
   string hash = dep.genHash;
-  auto f = File(buildPath(depsDir, dep), "w");
+  auto f = File(buildPath(depsDir, dep.baseName), "w");
   scope(exit) f.close;
 
   f.write(hash);
@@ -152,22 +146,25 @@ unittest
  * Returns whether a target is up-to-date according to its entry in the redo DB.
  */
 
-bool upToDate(const string target)
+bool upToDate(const string topDir, const string target)
 {
   if(!target.exists) return false;
 
-  auto depsDir = buildPath(".redo", target);
+  auto depsDir = buildPath(topDir, ".redo", target);
   if(!depsDir.exists) return false;
 
   foreach(entry; dirEntries(depsDir, SpanMode.breadth))
   {
+    if(entry.isDir) continue;
+
     auto dep = replaceFirst(entry.name, regex(depsDir ~ `[/\\]`), "");
     if(!dep.exists) return false;
 
     auto oldhash = entry.getHash;
     auto newhash = dep.genHash;
 
-    if(oldhash != newhash || (dep.redoPath && !dep.upToDate)) return false;
+    if(oldhash != newhash || (dep.redoPath && !upToDate(topDir, dep)))
+      return false;
   }
 
   return true;

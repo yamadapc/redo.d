@@ -5,6 +5,11 @@
   "authors": [
     "Pedro Tacla Yamada"
   ],
+  "targetType": "executable",
+  "mainSourceFile": "source/redo.d",
+  "sourceFiles": [
+    "source/redo.d"
+  ],
   "dependencies": {
   }
 }
