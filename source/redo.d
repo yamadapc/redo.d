@@ -2,7 +2,7 @@ import std.ascii : LetterCase;
 import std.digest.md : toHexString, MD5;
 import std.file : rename, remove, isFile, isDir, exists, dirEntries, SpanMode,
                   mkdirRecurse, getSize;
-import std.path : extension, baseName, buildPath, dirName;
+import std.path : extension, baseName, buildPath, dirName, stripExtension;
 import std.process : wait, spawnProcess, environment, getcwd;
 import std.regex : replaceFirst, regex;
 import std.stdio : File, writeln, stdin, stdout, stderr;
@@ -58,7 +58,7 @@ void redo(const string target, string topDir)
   scope(exit) tmp.close;
 
   auto pid = spawnProcess(
-    [ "sh", "-x", redoPath, "-", target.baseName, tmpPath ],
+    [ "sh", "-x", redoPath, target, target.baseName.stripExtension, tmpPath ],
     stdin,
     stdout,
     stderr,
