@@ -11,6 +11,7 @@
     "source/redo.d"
   ],
   "dependencies": {
+    "d-leveldb": "~master"
   }
 }
 
