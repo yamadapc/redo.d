@@ -161,6 +161,7 @@ bool upToDate(const string topDir, const string target)
   auto db = getDb(topDir);
   scope(exit) delete db;
   auto it = db.iterator;
+  scope(exit) delete it;
   it.seek(target);
 
   if(it.valid && it.value.as!bool)
