@@ -1,10 +1,20 @@
 language: d
 script: 
   - dub build
+  - mv redo---redoing redo
   - ./redo test
 install:
+  # leveldb
   # dmd
   # dub
+  - sudo apt-get install libsnappy-dev
+  - git clone https://code.google.com/p/leveldb
+  - cd leveldb
+  - make
+  - sudo cp --preserve=links libleveldb.* /usr/local/lib
+  - sudo cp -r include/leveldb /usr/local/include/
+  - sudo ldconfig
+  - cd ..
   - DMD_VER=2.065.0
   - DMD=dmd_${DMD_VER}-0_amd64.deb
   - DUB_VER=0.9.21
