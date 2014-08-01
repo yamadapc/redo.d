@@ -6,9 +6,31 @@
     "Pedro Tacla Yamada"
   ],
   "targetType": "executable",
-  "mainSourceFile": "source/redo.d",
-  "sourceFiles": [
-    "source/redo.d"
+  "sourcePaths": [
+  ],
+  "configurations": [
+    {
+      "name": "redo",
+      "targetType": "executable",
+      "mainSourceFile": "source/app.d",
+      "sourcePaths": [
+        "source/"
+      ]
+    },
+    {
+      "name": "test",
+      "targetType": "executable",
+      "sourcePaths": [
+        "./test",
+        "./source/redo"
+      ],
+      "excludedSourceFiles": [
+        "./source/app.d"
+      ],
+      "dependencies": {
+        "bed": ">=0.0.4"
+      }
+    }
   ],
   "dependencies": {
     "d-leveldb": "~master"

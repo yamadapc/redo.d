@@ -1,6 +1,7 @@
 language: d
-script: dub test
-
+script: 
+  - dub build
+  - ./redo test
 install:
   # dmd
   # dub
