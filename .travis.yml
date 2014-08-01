@@ -2,7 +2,9 @@ language: d
 script: 
   - dub build
   - mv redo---redoing redo
-  - ./redo test
+  - ln redo redo-ifchange
+  - export PATH=.:$PATH
+  - redo test
 install:
   # leveldb
   # dmd
