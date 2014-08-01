@@ -137,6 +137,7 @@ void runDo(const string target, const string script)
   if(exit != 0)
   {
     writeln("Redo script exit with non-zero exit code; ", exit);
+    if(tmpPath.exists) tmpPath.remove;
   }
   else if(tmpPath.exists && tmpPath.getSize != 0) rename(tmpPath, target);
 }
