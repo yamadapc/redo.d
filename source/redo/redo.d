@@ -1,3 +1,8 @@
+/**
+ * Authors: Pedro Tacla Yamada
+ * Date: August 1, 2014
+ * License: Licensed under the GPLv3 license. See LICENSE for more information
+ */
 module redo;
 
 import std.algorithm : startsWith, splitter, findSkip;
