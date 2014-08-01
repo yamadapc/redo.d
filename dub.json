@@ -12,6 +12,7 @@
     {
       "name": "redo",
       "targetType": "executable",
+      "targetName": "redo---redoing",
       "mainSourceFile": "source/app.d",
       "sourcePaths": [
         "source/"
@@ -20,7 +21,7 @@
     {
       "name": "test",
       "targetType": "executable",
-      "targetName": "test",
+      "targetName": "test---redoing",
       "sourcePaths": [
         "./tests",
         "./source/redo"
