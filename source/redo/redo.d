@@ -123,7 +123,7 @@ void runDo(const string target, const string script)
   scope(exit) tmp.close;
 
   auto pid = spawnProcess(
-    [ "sh", "-x", script, target, target.baseName.stripExtension, tmpPath ],
+    [ "sh", "-ex", script, target, target.baseName.stripExtension, tmpPath ],
     stdin,
     stdout,
     stderr,
