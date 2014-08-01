@@ -1,21 +1,38 @@
-import std.process : getcwd;
-import redo : redo, redoIfChange, printUsage;
+import std.process : getcwd, environment;
 
-void main(string[] args)
+import redo : redo, redoPath, redoIfChange, printUsage;
+
+int main(string[] args)
 {
-  if(args.length == 1) return printUsage;
+  import std.stdio;
+  if(args.length == 1)
+  {
+    printUsage;
+    return 1;
+  }
 
   auto topDir = getcwd();
 
   if(args[0] == "redo-ifchange")
   {
+    auto target = environment.get("REDO_TARGET");
+    if(target == null)
+    {
+      writeln("Missing REDO_TARGET environment variable.");
+      return 1;
+    }
+
+    redoIfChange(topDir, target, target.redoPath);
+
     foreach(const ref arg; args[1..$])
-      redoIfChange(topDir, arg);
+      redoIfChange(topDir, target, arg);
   }
   else
   {
     foreach(const ref arg; args[1..$])
       redo(topDir, arg);
   }
+
+  return 0;
 }
 
