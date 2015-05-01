@@ -3,7 +3,8 @@
  * Date: August 1, 2014
  * License: Licensed under the GPLv3 license. See LICENSE for more information
  */
-import std.process : getcwd, environment;
+import std.file : getcwd;
+import std.process : environment;
 
 import redo : redo, redoPath, redoIfChange, printUsage;
 
